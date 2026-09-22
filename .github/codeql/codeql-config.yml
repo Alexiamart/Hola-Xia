@@ -1,0 +1,4 @@
+# Exclude documentation-only paths from code scanning analysis.
+# This avoids running AI code-scanning analysis on Markdown content.
+paths-ignore:
+  - '**/*.md'
