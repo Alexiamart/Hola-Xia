@@ -2,20 +2,21 @@
 
 ## Supported Versions
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
-
 | Version | Supported          |
 | ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+| All versions | :x:         |
+
+This repository is a personal practice project and currently no released version
+is supported with security updates.
 
 ## Reporting a Vulnerability
 
-Use this section to tell people how to report a vulnerability.
+Please report vulnerabilities privately using GitHub's private advisory form:
+https://github.com/Alexiamart/Hola-Xia/security/advisories/new
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+After a report is submitted:
+- You will receive an initial response within 7 days.
+- Valid reports will be investigated and a mitigation plan or fix timeline will
+  be shared through the advisory thread.
+- If the report is not accepted, the reason will be communicated in the same
+  private thread.
