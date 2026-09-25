@@ -35,7 +35,8 @@ Empleos:
       fallar rápido: verdadero
       Matriz:
         Incluye:
--
+  -
+        # CodeQL admite las siguientes palabras clave de valores para 'language': 'actions', 'c-cpp', 'csharp', 'go', 'java-kotlin', 'javascript-typescript', 'python', 'ruby', 'rust', 'swift'
         # CodeQL admite las siguientes palabras clave de valores para 'language': 'actions', 'c-cpp', 'csharp', 'go', 'java-kotlin', 'javascript-typescript', 'python', 'ruby', 'rust', 'swift'
         # Usa `c-cpp` para analizar el código escrito en C, C++ o ambos
         # Usa 'java-kotlin' para analizar el código escrito en Java, Kotlin o ambos
