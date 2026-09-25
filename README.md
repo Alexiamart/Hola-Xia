@@ -83,7 +83,5 @@ echo 'Si está utilizando un modo de construcción "manual" para uno o más de l
 'Tu código, por ejemplo:'
 eco 'hacer arranque'
 eco 'hacer liberación'
-Empleos:
-escaneo de código:
-Usos: github/avanced-security/.github/workflows/code-scanning.yml@main +con:
-Modelo: <github/avanced-security>
+Usos: github/seguridad-avanzada/.github/workflows/code-scanning.yml@main +con:
+Modelo: <github/seguridad-avanzada>
