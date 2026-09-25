@@ -85,10 +85,5 @@ eco 'hacer arranque'
 eco 'hacer liberación'
 Empleos:
 escaneo de código:
-Usos: github/avanced-security/.github/workflows/code-scanning.yml@main
-con:
-Modelo: <supported-model-id>
-Env:
-COPILOT_MODEL: <supported-model-id>
-- nombre: Realizar análisis CodeQL
-       Usos: github/codeql-action/analyze@v4
+Usos: github/avanced-security/.github/workflows/code-scanning.yml@main +con:
+Modelo: <github/avanced-security>
