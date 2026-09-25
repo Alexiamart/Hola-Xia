@@ -1,3 +1,90 @@
 # Ola-yo
 Práctica 
 Estudiante de Nutrición
+nombre: "CodeQL Advanced"
+
+En:
+  Empuje:
+    ramas: [ "principal" ]
+  Pull_solicitud:
+    ramas: [ "principal" ]
+  Horario:
+- cron: '40 20 * * 6'
+
+Empleos:
+  Analizar:
+    nombre: Analizar (${{ matrix.language }})
+    # El tamaño del corredor afecta al tiempo de análisis de CodeQL. Para obtener más información, consulte:
+    # - https://gh.io/recursos-de-hardware-recomendado-para-el-código-en-runningql
+    # - https://gh.io/supported-runners-and-hardware-resources
+    # - https://gh.io/using-larger-runners (solo en GitHub.com)
+    # Considere el uso de corredores o máquinas más grandes con mayores recursos para posibles mejoras en el tiempo de análisis.
+    runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
+    Permisos:
+      # requerido para todos los flujos de trabajo
+      eventos de seguridad: escribir
+
+      # requerido para buscar paquetes CodeQL internos o privados
+      paquetes: leer
+
+      # solo requerido para flujos de trabajo en repositorios privados
+      Acciones: leer
+      Contenido: leer
+
+    Estrategia:
+      fallar rápido: verdadero
+      Matriz:
+        Incluye:
+-
+        # CodeQL admite las siguientes palabras clave de valores para 'language': 'actions', 'c-cpp', 'csharp', 'go', 'java-kotlin', 'javascript-typescript', 'python', 'ruby', 'rust', 'swift'
+        # Usa `c-cpp` para analizar el código escrito en C, C++ o ambos
+        # Usa 'java-kotlin' para analizar el código escrito en Java, Kotlin o ambos
+        # Use 'javascript-typescript' para analizar el código escrito en JavaScript, TypeScript o ambos
+        # Para obtener más información sobre cómo cambiar los idiomas que se analizan o personalizar el modo de construcción para su análisis,
+        # ver https://docs.github.com/en/code-security/code-scanning/creating-an-advanced-setup-for-code-scanning/customizing-your-advanced-setup-for-code-scanning.
+        # Si está analizando un lenguaje compilado, puede modificar el "modo de compilación" para ese idioma para personalizar cómo
+        # su base de código está analizada, consulte https://docs.github.com/en/code-security/code-scanning/creating-an-advanced-setup-for-code-scanning/codeql-code-scanning-for-compiled-languages
+    Pasos:
+- nombre: Repositorio de pago
+      Usos: acciones/checkout@v7
+
+    # Agregue cualquier paso de configuración antes de ejecutar la acción `github/codeql-action/init`.
+    # Esto incluye pasos como la instalación de compiladores o tiempos de ejecución (`actions/setup-node`
+    # u otros). Por lo general, esto solo se requiere para las compilaciones manuales.
+    # - nombre: Tiempo de ejecución de la configuración (ejemplo)
+    # usos: actions/setup-example@v1
+
+    # Inicializa las herramientas CodeQL para escanear.
+- nombre: Inicializar CodeQL
+      Usos: github/codeql-action/init@v4
+      con:
+        Idiomas: ${{ matrix.language }}
+        modo de construcción: ${{ matrix.mode-construcción }}
+        # Si desea especificar consultas personalizadas, puede hacerlo aquí o en un archivo de configuración.
+        # Por defecto, las consultas enumeradas aquí anularán cualquier especificación en un archivo de configuración.
+        # Prefija la lista aquí con "+" para usar estas consultas y las del archivo de configuración.
+
+        # Para obtener más detalles sobre los paquetes de consultas de CodeQL, consulte: https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning#using-queries-in-ql-packs
+        # consultas: seguridad extendida, seguridad y calidad
+
+    # Si el paso de análisis falla para uno de los idiomas con los que está analizando
+    # "No pudimos construir automáticamente su código", modifique la matriz anterior
+    # para establecer el modo de construcción en "manual" para ese idioma. Luego modifica este paso
+    # para construir tu código.
+    # ℹ️ Programas de línea de comandos para ejecutar usando el shell del sistema operativo.
+    # 📚 Ver https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsrun
+- nombre: Ejecutar pasos de construcción manual
+      if: matrix.build-mode == 'manual'
+      Shell: bash
+      correr: |
+echo 'Si está utilizando un modo de construcción "manual" para uno o más de los' \
+'idiomas que estás analizando, reemplaza esto con los comandos para construir' \
+'Tu código, por ejemplo:'
+eco 'hacer arranque'
+eco 'hacer liberación'
+salida 1
+
+- nombre: Realizar análisis CodeQL
+      Usos: github/codeql-action/analyze@v4
+      con:
+        categoría: "/language:${{matrix.language}}"
