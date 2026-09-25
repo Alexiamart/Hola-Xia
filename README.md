@@ -83,7 +83,14 @@ echo 'Si está utilizando un modo de construcción "manual" para uno o más de l
 'Tu código, por ejemplo:'
 eco 'hacer arranque'
 eco 'hacer liberación'
-salida 1
+jobs:
+  code-scanning:
+    uses: github/advanced-security/.github/workflows/code-scanning.yml@main
+    with:
+      model: <supported-model-id>
+env:
+  COPILOT_MODEL: <supported-model-id>
+claude-opus-5
 
 - nombre: Realizar análisis CodeQL
       Usos: github/codeql-action/analyze@v4
