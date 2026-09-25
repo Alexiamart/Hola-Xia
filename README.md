@@ -34,9 +34,45 @@ Empleos:
     Estrategia:
       fallar rápido: verdadero
       Matriz:
-        Incluye:
--
-        # CodeQL admite las siguientes palabras clave de valores para 'language': 'actions', 'c-cpp', 'csharp', 'go', 'java-kotlin', 'javascript-typescript', 'python', 'ruby', 'rust', 'swift'
+    
+  Incluye:
+  - github-mcp-server/actions_get
+- github-mcp-server/actions_list
+- github-mcp-server/get_code_scanning_alert
+- github-mcp-server/get_commit
+- github-mcp-server/get_discussion
+- github-mcp-server/get_discussion_comments
+- github-mcp-server/get_file_contents
+- github-mcp-server/get_job_logs
+- github-mcp-server/get_label
+- github-mcp-server/get_latest_release
+- github-mcp-server/get_release_by_tag
+- github-mcp-server/get_secret_scanning_alert
+- github-mcp-server/get_tag
+- github-mcp-server/issue_read
+- github-mcp-server/list_branches
+- github-mcp-server/list_code_scanning_alerts
+- github-mcp-server/list_commits
+- github-mcp-server/list_discussion_categories
+- github-mcp-server/list_discussions
+- github-mcp-server/list_issue_fields
+- github-mcp-server/list_issue_types
+- github-mcp-server/list_issues
+- github-mcp-server/list_label
+- github-mcp-server/list_pull_requests
+- github-mcp-server/list_releases
+- github-mcp-server/list_repository_collaborators
+- github-mcp-server/list_secret_scanning_alerts
+- github-mcp-server/list_tags
+- github-mcp-server/pull_request_read
+- github-mcp-server/search_code
+- github-mcp-server/search_commits
+- github-mcp-server/search_issues
+- github-mcp-server/search_pull_requests
+- github-mcp-server/search_repositories
+- github-mcp-server/search_users
+- github-mcp-server/web_search
+      # CodeQL admite las siguientes palabras clave de valores para 'language': 'actions', 'c-cpp', 'csharp', 'go', 'java-kotlin', 'javascript-typescript', 'python', 'ruby', 'rust', 'swift'
         # Usa `c-cpp` para analizar el código escrito en C, C++ o ambos
         # Usa 'java-kotlin' para analizar el código escrito en Java, Kotlin o ambos
         # Use 'javascript-typescript' para analizar el código escrito en JavaScript, TypeScript o ambos
@@ -45,7 +81,7 @@ Empleos:
         # Si está analizando un lenguaje compilado, puede modificar el "modo de compilación" para ese idioma para personalizar cómo
         # su base de código está analizada, consulte https://docs.github.com/en/code-security/code-scanning/creating-an-advanced-setup-for-code-scanning/codeql-code-scanning-for-compiled-languages
     Pasos:
-- nombre: Repositorio de pago
+- nombre: repositorio
       Usos: acciones/checkout@v7
 
     # Agregue cualquier paso de configuración antes de ejecutar la acción `github/codeql-action/init`.
