@@ -1871,3 +1871,420 @@ Please do not report security vulnerabilities through public issues. Follow the 
 ## License
 
 This project is licensed under the terms of the MIT open source license. Please refer to [MIT](./LICENSE) for the full terms.
+
+# arm-runner-action
+
+Run tests natively and build images directly from GitHub Actions using a
+chroot-based virtualized Raspberry Pi (raspios/raspbian) environment.
+
+With this action, you can:
+
+- run tests in an environment closer to a real embedded system, using qemu
+userland Linux emulation;
+- build artifacts in such environment and upload them;
+- prepare images that are ready to run on Raspberry Pi and other ARM embedded
+devices.
+
+This action works with both 32 bits (arm) and 64 bits (aarch64) images.
+
+## Usage
+
+Minimal usage is as follows:
+
+```yaml
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: pguyot/arm-runner-action@v2
+      with:
+        commands: |
+            commands to run tests
+```
+
+Typical usage to upload an image as an artifact:
+
+```yaml
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - uses: pguyot/arm-runner-action@v2
+      id: build_image
+      with:
+        base_image: raspios_lite:2022-04-04
+        commands: |
+            commands to build image
+    - name: Compress the release image
+      if: github.ref == 'refs/heads/releng' || startsWith(github.ref, 'refs/tags/')
+      run: |
+        mv ${{ steps.build_image.outputs.image }} my-release-image.img
+        xz -0 -T 0 -v my-release-image.img
+    - name: Upload release image
+      uses: actions/upload-artifact@v2
+      if: github.ref == 'refs/heads/releng' || startsWith(github.ref, 'refs/tags/')
+      with:
+        name: Release image
+        path: my-release-image.img.xz
+```
+
+Several scenarios are actually implemented as [tests](/.github/workflows).
+
+### Host and guest OS
+
+The action is tested with `ubuntu-22.04`, `ubuntu-24.04`, and
+`ubuntu-latest`. It requires a Linux kernel that is compatible enough with the
+guest system as it uses qemu userland emulation. It relies on binfmt.
+
+### Commands
+
+The repository is copied to the image before the commands script is executed
+in the chroot environment. The commands script is copied to /tmp/ and is
+deleted on cleanup.
+
+### Inputs
+
+#### `commands`
+
+Commands to execute. Written to a script within the image. Required.
+
+#### `base_image`
+
+Base image to use. By default, uses latest `raspios_lite` image. Please note
+that this is not necessarily well suited for continuous integration as
+the latest image can change with new releases.
+
+The following values are allowed:
+
+-   `raspbian_lite:2020-02-13`
+-   `raspbian_lite:latest`
+-   `raspios_lite:2021-03-04`
+-   `raspios_lite:2021-05-07`
+-   `raspios_lite:2021-10-30`
+-   `raspios_lite:2022-01-28`
+-   `raspios_lite:2022-04-04`
+-   `raspios_lite:2023-05-03`
+-   `raspios_lite:latest` (armhf build, *default*)
+-   `raspios_oldstable_lite:2023-05-03`
+-   `raspios_lite_arm64:2022-01-28` (arm64)
+-   `raspios_lite_arm64:2022-04-04` (arm64)
+-   `raspios_lite_arm64:2023-05-03` (arm64)
+-   `raspios_lite_arm64:latest` (arm64)
+-   `dietpi:rpi_armv6_bookworm`
+-   `dietpi:rpi_armv7_bookworm`
+-   `dietpi:rpi_armv8_bookworm` (arm64)
+-   `dietpi:rpi5_armv8_bookworm` (arm64)
+-   `dietpi:rpi_armv6_trixie`
+-   `dietpi:rpi_armv7_trixie`
+-   `dietpi:rpi_armv8_trixie` (arm64)
+-   `dietpi:rpi5_armv8_trixie` (arm64)
+-   `dietpi:rpi_armv6_forky`
+-   `dietpi:rpi_armv7_forky`
+-   `dietpi:rpi_armv8_forky` (arm64)
+-   `dietpi:rpi5_armv8_forky` (arm64)
+-   `raspi_1_bullseye:20220121` (armel)
+-   `raspi_2_bullseye:20230102` (armhf)
+-   `raspi_3_bullseye:20230102` (arm64)
+-   `raspi_4_bullseye:20230102` (arm64)
+-   `raspi_1_bookworm:20231109` (armel)
+-   `raspi_2_bookworm:20231109` (armhf)
+-   `raspi_3_bookworm:20231109` (arm64)
+-   `raspi_4_bookworm:20231109` (arm64)
+
+The input parameter also accepts any custom URL beginning in http(s)://...
+
+It also accepts file:// URIs, which can be useful for caching steps in multistep builds. See [cache test example](.github/workflows/test-cache.yml).
+
+Unfortunately, Archlinux ARM does not publish images that are ready to be
+flashed. See [ArchLinux example](.github/workflows/test-archlinux.yml) as a
+workaround to build the image following the official ArchLinux ARM
+instructions.
+
+More images will be added, eventually. Feel free to submit PRs.
+
+#### `image_additional_mb`
+
+Enlarge the image by this number of MB. Default is to not enlarge the image.
+
+#### `cpu`
+
+CPU to pass to qemu. Pass either a single CPU value or a pair
+`<arm_cpu>:<aarch64_cpu>`.
+
+Default is `arm1176:cortex-a53`, i.e. `arm1176` for arm and `cortex-a53` for
+aarch64. This is the most compatible pair for Raspberry Pi. Indeed, `arm1176`
+is the CPU of BCM2835 which is the SOC of first generation RaspberryPi and
+RaspberryPi Zero, while `cortex-a53` is the 64 bits CPU of the first 64 bits
+Raspberry Pi models. Code compiled for `arm1176` can be run on later 32 bits
+CPUs.
+
+The following values are specially processed:
+- `arm1176` equivalent to `arm1176:cortex-a53`.
+- `cortex-a7` equivalent to `cortex-a7:cortex-a53`. Optimized for later Pi
+  models (Pi 3/Pi 4 and Pi Zero 2). Not suitable for Pi 1/Pi 2/Pi Zero.
+- `cortex-a8` equivalent to `cortex-a8:max`.
+- `cortex-a53` equivalent to `max:cortex-a53`.
+- `cortex-a76` equivalent to `max:cortex-a76`. Note that this requires a newer
+  version of qemu, for example with runner ubuntu 24.04. See `test_cortex_a76`
+  in [cpu_info test](.github/workflows/test-cpu_info.yml).
+
+Some software uses the output of `uname -m` or equivalent. This command is
+directly driven by this `cpu` option. You might want to compile 32 bits
+binaries with both `arm1176` which translates to `armv6l` and `cortex-a7` which
+translates to `armv7l`.
+
+For FPU and vector instruction sets, software usually automatically looks into
+`/proc/cpuinfo` or equivalent. See `cpu_info` option below.
+
+Whether code is executed in 32 bits or 64 bits (and build generates 32 bits
+or 64 bits binaries) depend on the image. See _32 and 64 bits_ below.
+
+#### `copy_artifact_path`
+
+Source paths(s) inside the image to copy outside after the commands have
+executed. Relative to the `/<repository_name>` directory or the directory
+defined with `copy_repository_path`. Globs are allowed. To copy multiple paths,
+provide a list of paths, separated by semicolons. Default is not to copy.
+
+#### `copy_artifact_dest`
+
+Destination path to copy outside the image after the commands have executed.
+Relative to the working directory (outside the image). Defaults to `.`
+
+#### `copy_repository_path`
+
+Absolute path, inside the image, where the repository is copied or mounted.
+Defaults to `/<repository_name>`. It is also the working directory where
+commands are executed.
+
+The repository is copied unless `bind_mount_repository` is set to true.
+
+#### `bind_mount_repository`
+
+Bind mount the repository within the image instead of copying it. Default is
+to copy files.
+
+If mounted, any modification of files within the repository by the target
+emulated system will persist after execution. It does not accelerate execution
+significantly but can simplify the logic by avoiding the copy artifact step
+from the target system.
+
+#### `cpu_info`
+
+Path to a fake cpu_info file to be used instead of `/proc/cpuinfo`. Default is
+to not fake the CPU. With older versions of qemu, `/proc/cpuinfo` is not
+intercepted and will report amd64 CPU of GitHub runner.
+
+Some software checks for features using `/proc/cpuinfo` and this option can be
+used to trick them. The path is relative to the action (to use pre-defined
+settings) or to the local repository.
+
+Bundled with the action are the following 32 bits CPU infos:
+- `cpuinfo/raspberrypi_zero_w`
+- `cpuinfo/raspberrypi_3b` (requires `cortex-a7` cpu)
+- `cpuinfo/raspberrypi_zero2_w` (requires `cortex-a7` cpu)
+
+As well as the following 64 bits CPU infos:
+- `cpuinfo/raspberrypi_4b`
+- `cpuinfo/raspberrypi_zero2_w_arm64`
+- `cpuinfo/raspberrypi_5`
+
+On real hardware, the `/proc/cpuinfo` file content depends on the CPU being
+used in 32 bits or 64 bits mode, which in turn depends on the base image.
+Consequently, you may want to use `cpuinfo/raspberrypi_zero2_w_arm64` for
+64 bits builds and `cpuinfo/raspberrypi_zero2_w` for 32 bits builds.
+
+To avoid illegal instruction crashes, the `cpu_info` option must match what is
+passed to `cpu` option. In particular, when using 32 bits `cpu_info`, the
+default emulated CPU for 32 bits may not work and you should set `cpu` option
+to `cortex-a7`.
+
+qemu 8.2 and higher do intercept `/proc/cpuinfo` to report something related
+to the passed `cpu` option. So if you are running ubuntu-24.04 or if you install
+your own version of qemu-user-arm/aarch64, this option will not override
+`/proc/cpuinfo`; set `cpu` to the CPU you want qemu to report instead. For
+example, Raspberry Pi 4 should use `max:cortex-a72` with a 64-bit image, and
+Raspberry Pi 5 should use `cortex-a76` with a 64-bit image.
+
+#### `optimize_image`
+
+Zero-fill unused filesystem blocks and shrink root filesystem during final clean-up, to make any later
+image compression more efficient. Default is to optimize image.
+
+#### `use_systemd_nspawn`
+
+Use `systemd-nspawn` instead of chroot to run commands. Default is to use
+chroot.
+
+#### `systemd_nspawn_options`
+
+Additional options passed to `systemd-nspawn`. For example, `-E CI=${CI}` to pass
+CI environment variable. See [systemd-nspawn(1)](https://manpages.ubuntu.com/manpages/focal/man1/systemd-nspawn.1.html).
+
+#### `rootpartition`
+
+Index (starting with 1) of the root partition. Default is 2, which is suitable
+for Raspberry Pi. NVIDIA Jetson images require 1. This is the partition that is
+resized with `image_additional_mb` option.
+
+#### `bootpartition`
+
+Index (starting with 1) of the boot partition which gets mounted at /boot.
+Default is 1, which is suitable for Raspberry Pi. If the value is empty,
+the partition is not mounted.
+
+#### `shell`
+
+Path to shell or shell name to run the commands in. Defaults to /bin/sh.
+If missing, it will be installed. See `shell_package`.
+If defined as basename filename, it will be used as long as the shell binary
+exists under PATH after the package is installed.
+
+Parameters can be passed to the shell, e.g.:
+```yaml
+shell: /bin/bash -eo pipefail
+```
+
+#### `shell_package`
+
+The shell package to install, if different from shell. It may be handy
+with some shells that come packaged under a different package name.
+
+For example, to use `ksh93` as shell, set `shell` to `ksh93` and
+`shell_package` to `ksh`.
+
+#### `user`
+
+User to run commands within the image. It must exists.
+By default, commands are run with user 0 (root).
+Unless you are using `systemd-nspawn`, you can also specify the group with
+the `user:group` syntax.
+
+#### `exit_on_fail`
+
+Exit immediately if a command exits with a non-zero status. Default is to exit.
+Set to `no` or `false` to disable exiting on command failure. This only works
+with `sh`, `bash` and `ksh` shells.
+
+#### `copy_artifacts_on_fail`
+
+Copy artifacts if a command exits with a non-zero status. Default is to no copy.
+Set to `yes` to copy artifacts.
+
+#### `debug`
+
+Display executed commands as they are executed. Enabled by default.
+
+#### `import_github_env`
+
+Imports variables written so far to `$GITHUB_ENV` to the image. Default is not
+to import any environment. This may be useful for sharing external variables with
+the virtual environment. Set to `yes` or `true` to enable.
+
+Practically, this setting allows constructs like `${VARIABLE_NAME}` instead of
+`${{ env.VARIABLE_NAME }}` within the command set.
+
+#### `export_github_env`
+
+Enables `$GITHUB_ENV` for commands in the image and exports its contents on
+completion to subsequent tasks. This option is an alternative to using a
+file-based artifact for passing the results of commands outside the image
+environment.
+
+Note this parameter does not enable importing any contents written to
+`$GITHUB_ENV` ahead of running the commands. For that, use `import_github_env`.
+
+#### `enable_overlayfs`
+
+Enable Raspberry Pi OverlayFS (read-only root with tmpfs overlay) on the
+produced image. Default is `no`.
+
+Calling `raspi-config nonint do_overlayfs 0` from the `commands` block does
+not work on its own under qemu-user emulation: raspi-config invokes
+`update-initramfs -c -k "$(uname -r)"`, but `uname -r` reports the host
+kernel rather than the image kernel, so no initramfs is produced. The
+resulting image has `boot=overlay` in `cmdline.txt` but no
+`/boot/initrd.img`, and will not boot in overlay mode.
+
+When `enable_overlayfs` is set to `yes`, the action regenerates the
+initramfs against the image's actual kernel (detected from `/lib/modules`)
+after the `commands` step, places `/boot/initrd.img`, and ensures
+`cmdline.txt` and `config.txt` are configured for overlay boot. It is
+idempotent: it composes with `commands` that already invoke
+`raspi-config nonint do_overlayfs 0`.
+
+The script installs the `overlayroot` package into the image if it is not
+already present, so this option works with Raspberry Pi OS and custom images
+that have `apt` available. See
+[overlayfs test](.github/workflows/test-overlayfs.yml) for a verified
+example.
+
+### Outputs
+
+#### `image`
+
+Path to the image, useful after the step to upload the image as an artifact.
+
+### 32 and 64 bits
+
+Many RaspberryPis and ARM boards are based on 64-bits chipsets than can run
+32 bits and 64 bits kernels. RaspberryPi OS, as well as other distributions,
+are now provided in 32 bits and 64 bits flavors.
+
+This action works for images built for 32 bits and 64 bits ARM architectures.
+Default input values imply 32 bits images. For 64 bits, the CPU and the
+base image should match.
+
+The following matrix will build on armv6l, armv7l and aarch64 using the latest
+RaspberryPi OS images.
+
+```yaml
+name: Test architecture matrix
+on: [push, pull_request, workflow_dispatch]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        arch: [armv6l, armv7l, aarch64]
+        include:
+        - arch: armv6l
+          cpu: arm1176
+          base_image: raspios_lite:latest
+          cpu_info: raspberrypi_zero_w
+        - arch: armv7l
+          cpu: cortex-a7
+          base_image: raspios_lite:latest
+          cpu_info: raspberrypi_3b
+        - arch: aarch64
+          cpu: cortex-a53
+          base_image: raspios_lite_arm64:latest
+          cpu_info: raspberrypi_zero2_w_arm64_w
+    steps:
+    - uses: pguyot/arm-runner-action@v2
+      with:
+        base_image: ${{ matrix.base_image }}
+        cpu: ${{ matrix.cpu }}
+        cpu_info: ${{ matrix.cpu_info }}
+        commands: |
+            test `uname -m` = ${{ matrix.arch }}
+            grep Model /proc/cpuinfo
+```
+
+Internally, the `cpu` value is embedded in a wrapper for `qemu-arm-static` and
+`qemu-aarch64-static`. The actual qemu invoked depends on executables within
+the base image.
+
+## Examples
+
+Real world examples include:
+
+-   [pguyot/wm8960](https://github.com/pguyot/wm8960/blob/master/.github/workflows/arm-runner.yml) : compilation and tests
+-   [nabaztag2018/pynab](https://github.com/nabaztag2018/pynab/blob/master/.github/workflows/arm-runner.yml) : compilation, tests and disk image.
+
+## Releases
+
+Releases are listed on [dedicated page](https://github.com/pguyot/arm-runner-action/releases).
+Release numbers follow semantic versionning : incompatible changes in invocation will be reflected with major release upgrades.
